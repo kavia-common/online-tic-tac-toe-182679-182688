@@ -57,12 +57,13 @@ const text = '#111827';
 
 <style>
   :root {
-    --primary: {primary};
-    --secondary: {secondary};
-    --error: {error};
-    --bg: {bg};
-    --surface: {surface};
-    --text: {text};
+    /* Use Astro frontmatter variables by interpolating with {} inside style; ensure they resolve to literals */
+    --primary: #{primary};
+    --secondary: #{secondary};
+    --error: #{error};
+    --bg: #{bg};
+    --surface: #{surface};
+    --text: #{text};
     --text-muted: #6b7280;
     --ring: rgba(37, 99, 235, 0.5);
     --shadow: 0 10px 25px rgba(0, 0, 0, 0.08);
@@ -431,8 +432,79 @@ const text = '#111827';
 
   // Initialize when DOM is ready
   if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', initTicTacToe);
+    document.addEventListener('DOMContentLoaded', () => {
+      initTicTacToe();
+      runQuickVerification();
+    });
   } else {
     initTicTacToe();
+    runQuickVerification();
+  }
+
+  // PUBLIC_INTERFACE
+  /**
+   * runQuickVerification
+   * Simulates a few moves to verify that icons render and that win/draw logic remains correct.
+   * This is a lightweight check and logs results to console; it does not alter persistent state.
+   */
+  function runQuickVerification() {
+    const boardEl = document.getElementById('board');
+    if (!boardEl) return;
+
+    const cells = Array.from(boardEl.querySelectorAll('.cell')) as HTMLButtonElement[];
+    if (cells.length !== 9) return;
+
+    // Backup initial DOM/content
+    const backups = cells.map((c) => c.innerHTML);
+    const classBackups = cells.map((c) => c.className);
+    const statusEl = document.getElementById('status');
+
+    // Helper to click if enabled
+    const tryClick = (idx: number) => {
+      const btn = cells[idx];
+      if (!btn) return;
+      if (btn.getAttribute('aria-disabled') === 'true') return;
+      btn.click();
+    };
+
+    // Sequence to create a win for X (0,1,2):
+    // X:0, O:3, X:1, O:4, X:2
+    const seq = [0, 3, 1, 4, 2];
+    seq.forEach(tryClick);
+
+    // Assertions
+    const hasKnight0 = !!cells[0].querySelector('svg.knight');
+    const hasQueen3 = !!cells[3].querySelector('svg.queen');
+    const hasKnight1 = !!cells[1].querySelector('svg.knight');
+    const hasQueen4 = !!cells[4].querySelector('svg.queen');
+    const hasKnight2 = !!cells[2].querySelector('svg.knight');
+
+    if (!hasKnight0 || !hasQueen3 || !hasKnight1 || !hasQueen4 || !hasKnight2) {
+      console.warn('[TTT-verify] Expected SVG icons not found after simulated moves.', {
+        hasKnight0, hasQueen3, hasKnight1, hasQueen4, hasKnight2
+      });
+    }
+
+    const winLineApplied = [0,1,2].every(i => cells[i].classList.contains('win'));
+    if (!winLineApplied) {
+      console.warn('[TTT-verify] Winning line classes not applied as expected.');
+    }
+
+    if (statusEl && !/Winner:\s*X/.test(statusEl.textContent || '')) {
+      console.warn('[TTT-verify] Status did not report expected winner "X".', statusEl.textContent);
+    }
+
+    // Restore state by clicking Reset if available
+    const resetBtn = document.getElementById('reset') as HTMLButtonElement | null;
+    if (resetBtn) {
+      resetBtn.click();
+    } else {
+      // Fallback restore if reset button missing for some reason
+      cells.forEach((c, i) => {
+        c.innerHTML = backups[i];
+        c.className = classBackups[i];
+      });
+      if (statusEl) statusEl.textContent = 'Current player: X';
+    }
   }
 </script>
