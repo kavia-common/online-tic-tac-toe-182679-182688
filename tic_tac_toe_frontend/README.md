@@ -1,47 +1,60 @@
-# Astro Starter Kit: Minimal
+# Tic Tac Toe (Astro)
 
-```sh
-npm create astro@latest -- --template minimal
-```
+A simple, modern, and accessible Tic Tac Toe game built with Astro. Two players can play locally in the browser. Styled with the Ocean Professional theme (primary #2563EB, secondary/success #F59E0B, error #EF4444, background #f9fafb, surface #ffffff, text #111827).
 
-[![Open in StackBlitz](https://developer.stackblitz.com/img/open_in_stackblitz.svg)](https://stackblitz.com/github/withastro/astro/tree/latest/examples/minimal)
-[![Open with CodeSandbox](https://assets.codesandbox.io/github/button-edit-lime.svg)](https://codesandbox.io/p/sandbox/github/withastro/astro/tree/latest/examples/minimal)
-[![Open in GitHub Codespaces](https://github.com/codespaces/badge.svg)](https://codespaces.new/withastro/astro?devcontainer_path=.devcontainer/minimal/devcontainer.json)
+## How it works
 
-> 🧑‍🚀 **Seasoned astronaut?** Delete this file. Have fun!
+- X always starts.
+- Players alternate turns by clicking a cell or focusing a cell and pressing Enter/Space.
+- The game detects wins and draws and displays the status via an aria-live region.
+- Press "Reset Game" to clear the board and start over.
 
-## 🚀 Project Structure
-
-Inside of your Astro project, you'll see the following folders and files:
+## Project Structure
 
 ```text
-/
-├── public/
+tic_tac_toe_frontend/
+├── astro.config.mjs
+├── package.json
 ├── src/
-│   └── pages/
-│       └── index.astro
-└── package.json
+│   ├── components/
+│   │   ├── Game.astro        # Main game component with logic + UI
+│   │   └── ThemeToggle.astro # Optional light/dark toggle button
+│   ├── layouts/
+│   │   └── Layout.astro      # Imports global styles and wraps pages
+│   ├── pages/
+│   │   └── index.astro       # Home page that renders the game
+│   └── styles/
+│       └── global.css        # Global CSS (resets, base typography, theme vars)
+└── tsconfig.json
 ```
 
-Astro looks for `.astro` or `.md` files in the `src/pages/` directory. Each page is exposed as a route based on its file name.
+## Run locally
 
-There's nothing special about `src/components/`, but that's where we like to put any Astro/React/Vue/Svelte/Preact components.
+From the container root folder (`tic_tac_toe_frontend`):
 
-Any static assets, like images, can be placed in the `public/` directory.
+```bash
+npm install
+npm run dev
+```
 
-## 🧞 Commands
+The app starts on port 3000 (configured in astro.config.mjs). Visit:
+- http://localhost:3000
 
-All commands are run from the root of the project, from a terminal:
+To build and preview:
 
-| Command                   | Action                                           |
-| :------------------------ | :----------------------------------------------- |
-| `npm install`             | Installs dependencies                            |
-| `npm run dev`             | Starts local dev server at `localhost:4321`      |
-| `npm run build`           | Build your production site to `./dist/`          |
-| `npm run preview`         | Preview your build locally, before deploying     |
-| `npm run astro ...`       | Run CLI commands like `astro add`, `astro check` |
-| `npm run astro -- --help` | Get help using the Astro CLI                     |
+```bash
+npm run build
+npm run preview
+```
 
-## 👀 Want to learn more?
+## Accessibility
 
-Feel free to check [our documentation](https://docs.astro.build) or jump into our [Discord server](https://astro.build/chat).
+- Cells are focusable buttons with role="gridcell".
+- Keyboard: use Tab to move focus and Enter/Space to mark a cell.
+- Status uses `aria-live="polite"` for screen reader updates.
+- Visible focus outlines are provided.
+
+## Notes
+
+- No backend or environment variables are required beyond the existing setup.
+- The game logic is implemented in vanilla TypeScript within an Astro component (no React/Preact dependency).

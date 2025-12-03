@@ -1,0 +1,382 @@
+---
+/**
+ * Game.astro
+ * A self-contained Tic Tac Toe component implemented with Astro + vanilla TypeScript.
+ * Provides a 3x3 grid, turn-based local play (X starts), win/draw detection,
+ * reset button, accessible keyboard interactions, and aria-live status.
+ */
+const primary = '#2563EB';
+const secondary = '#F59E0B'; // used as success/accent
+const error = '#EF4444';
+const bg = '#f9fafb';
+const surface = '#ffffff';
+const text = '#111827';
+---
+<section class="game-container" aria-labelledby="game-title">
+  <header class="header">
+    <h1 id="game-title" class="title">Tic Tac Toe</h1>
+    <p class="subtitle">Two-player local play. X starts. Use mouse or keyboard (Tab + Enter/Space) to mark cells.</p>
+  </header>
+
+  <div class="board-wrapper">
+    <div
+      id="board"
+      class="board"
+      role="grid"
+      aria-label="Tic Tac Toe board"
+      aria-describedby="status"
+      data-current="X"
+      data-winner=""
+      data-draw="false"
+    >
+      <button class="cell" role="gridcell" aria-label="Cell 1" data-index="0"></button>
+      <button class="cell" role="gridcell" aria-label="Cell 2" data-index="1"></button>
+      <button class="cell" role="gridcell" aria-label="Cell 3" data-index="2"></button>
+      <button class="cell" role="gridcell" aria-label="Cell 4" data-index="3"></button>
+      <button class="cell" role="gridcell" aria-label="Cell 5" data-index="4"></button>
+      <button class="cell" role="gridcell" aria-label="Cell 6" data-index="5"></button>
+      <button class="cell" role="gridcell" aria-label="Cell 7" data-index="6"></button>
+      <button class="cell" role="gridcell" aria-label="Cell 8" data-index="7"></button>
+      <button class="cell" role="gridcell" aria-label="Cell 9" data-index="8"></button>
+    </div>
+  </div>
+
+  <div class="panel">
+    <p id="status" class="status" aria-live="polite" aria-atomic="true">Current player: X</p>
+    <div class="actions">
+      <button id="reset" class="reset" type="button" aria-label="Reset Game">Reset Game</button>
+    </div>
+  </div>
+
+  <footer class="footer">
+    <small>
+      Built with Astro. Theme: Ocean Professional. <a href="https://astro.build" target="_blank" rel="noreferrer">Learn more</a>.
+    </small>
+  </footer>
+</section>
+
+<style>
+  :root {
+    --primary: {primary};
+    --secondary: {secondary};
+    --error: {error};
+    --bg: {bg};
+    --surface: {surface};
+    --text: {text};
+    --text-muted: #6b7280;
+    --ring: rgba(37, 99, 235, 0.5);
+    --shadow: 0 10px 25px rgba(0, 0, 0, 0.08);
+    --shadow-soft: 0 4px 12px rgba(0, 0, 0, 0.06);
+    --gradient-start: rgba(59, 130, 246, 0.1); /* from-blue-500/10 */
+    --gradient-end: #f9fafb; /* to-gray-50 approximated by bg */
+  }
+
+  .game-container {
+    max-width: 900px;
+    margin: 0 auto;
+    padding: 32px 16px 48px;
+  }
+
+  .header {
+    text-align: center;
+    margin-bottom: 28px;
+  }
+
+  .title {
+    margin: 0;
+    font-size: 2rem;
+    color: var(--text);
+    letter-spacing: -0.02em;
+  }
+
+  .subtitle {
+    margin: 8px auto 0;
+    max-width: 700px;
+    color: var(--text-muted);
+  }
+
+  .board-wrapper {
+    display: grid;
+    place-items: center;
+  }
+
+  .board {
+    width: min(92vw, 460px);
+    aspect-ratio: 1 / 1;
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 12px;
+    padding: 16px;
+    border-radius: 20px;
+    background: linear-gradient(135deg, var(--gradient-start), var(--gradient-end));
+    box-shadow: var(--shadow);
+  }
+
+  .cell {
+    appearance: none;
+    border: none;
+    border-radius: 16px;
+    background: var(--surface);
+    color: var(--text);
+    font-size: clamp(2rem, 7vw, 3.25rem);
+    font-weight: 700;
+    display: grid;
+    place-items: center;
+    cursor: pointer;
+    box-shadow: var(--shadow-soft);
+    transition: transform 0.08s ease, box-shadow 0.2s ease, background-color 0.2s ease, color 0.2s ease, outline-color 0.2s ease;
+    line-height: 1;
+    height: 100%;
+  }
+
+  .cell:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 8px 18px rgba(0,0,0,0.10);
+  }
+
+  .cell:active {
+    transform: translateY(0);
+  }
+
+  .cell:focus-visible {
+    outline: 3px solid var(--ring);
+    outline-offset: 2px;
+  }
+
+  .cell[aria-disabled="true"] {
+    cursor: default;
+    opacity: 0.9;
+  }
+
+  .cell.x {
+    color: var(--primary);
+    text-shadow: 0 4px 10px rgba(37, 99, 235, 0.2);
+  }
+
+  .cell.o {
+    color: var(--secondary);
+    text-shadow: 0 4px 10px rgba(245, 158, 11, 0.2);
+  }
+
+  .cell.win {
+    background: radial-gradient(ellipse at center, rgba(37, 99, 235, 0.12), transparent 70%);
+  }
+
+  .panel {
+    margin-top: 18px;
+    display: grid;
+    gap: 12px;
+    justify-items: center;
+  }
+
+  .status {
+    margin: 0;
+    padding: 10px 14px;
+    border-radius: 999px;
+    background: var(--surface);
+    box-shadow: var(--shadow-soft);
+    color: var(--text);
+    min-height: 40px;
+    display: inline-grid;
+    place-items: center;
+  }
+
+  .status.win {
+    color: var(--primary);
+    font-weight: 700;
+  }
+
+  .status.draw {
+    color: var(--error);
+    font-weight: 700;
+  }
+
+  .actions {
+    display: flex;
+    gap: 12px;
+  }
+
+  .reset {
+    appearance: none;
+    border: 1px solid rgba(17, 24, 39, 0.08);
+    background: linear-gradient(135deg, rgba(59,130,246,0.08), rgba(249,250,251,1));
+    color: var(--text);
+    padding: 10px 16px;
+    border-radius: 12px;
+    cursor: pointer;
+    font-weight: 600;
+    transition: transform 0.08s ease, box-shadow 0.2s ease, background-color 0.2s ease, color 0.2s ease;
+    box-shadow: var(--shadow-soft);
+  }
+
+  .reset:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 8px 18px rgba(0,0,0,0.10);
+  }
+
+  .reset:focus-visible {
+    outline: 3px solid var(--ring);
+    outline-offset: 2px;
+  }
+
+  .footer {
+    text-align: center;
+    margin-top: 28px;
+    color: var(--text-muted);
+  }
+
+  .footer a {
+    color: var(--primary);
+    text-decoration: none;
+  }
+
+  .footer a:hover {
+    text-decoration: underline;
+  }
+
+  @media (max-width: 420px) {
+    .board {
+      gap: 10px;
+      padding: 12px;
+      border-radius: 16px;
+    }
+    .cell {
+      border-radius: 14px;
+    }
+  }
+</style>
+
+<script type="module">
+  // PUBLIC_INTERFACE
+  /**
+   * initTicTacToe
+   * Initializes the Tic Tac Toe game logic with keyboard accessibility and ARIA updates.
+   */
+  function initTicTacToe() {
+    const boardEl = document.getElementById('board');
+    const cells = Array.from(boardEl?.querySelectorAll('.cell') ?? []) as HTMLButtonElement[];
+    const statusEl = document.getElementById('status') as HTMLElement | null;
+    const resetBtn = document.getElementById('reset') as HTMLButtonElement | null;
+
+    type Player = 'X' | 'O';
+    type CellValue = Player | '';
+
+    let board: CellValue[] = Array(9).fill('') as CellValue[];
+    let currentPlayer: Player = 'X';
+    let winner: Player | '' = '';
+    let draw = false;
+    let winningLine: number[] = [];
+
+    const WIN_LINES: number[][] = [
+      [0,1,2], [3,4,5], [6,7,8], // rows
+      [0,3,6], [1,4,7], [2,5,8], // cols
+      [0,4,8], [2,4,6],          // diagonals
+    ];
+
+    function setStatus(text: string, classes: string[] = []) {
+      if (!statusEl) return;
+      statusEl.textContent = text;
+      statusEl.className = 'status ' + classes.join(' ');
+    }
+
+    function render() {
+      // Update cells
+      cells.forEach((btn, idx) => {
+        const val = board[idx];
+        btn.textContent = val;
+        btn.classList.toggle('x', val === 'X');
+        btn.classList.toggle('o', val === 'O');
+        btn.setAttribute('aria-disabled', winner || draw ? 'true' : (val ? 'true' : 'false'));
+        btn.tabIndex = val || winner || draw ? -1 : 0;
+        btn.classList.toggle('win', winningLine.includes(idx));
+      });
+
+      // Update board dataset for potential styling/hooks
+      if (boardEl) {
+        boardEl.dataset.current = currentPlayer as string;
+        boardEl.dataset.winner = winner as string;
+        boardEl.dataset.draw = String(draw);
+      }
+
+      // Update status
+      if (winner) {
+        setStatus(`Winner: ${winner}!`, ['win']);
+      } else if (draw) {
+        setStatus('Draw game. No winner.', ['draw']);
+      } else {
+        setStatus(`Current player: ${currentPlayer}`);
+      }
+    }
+
+    function checkWinner(): Player | '' {
+      for (const [a, b, c] of WIN_LINES) {
+        if (board[a] && board[a] === board[b] && board[b] === board[c]) {
+          winningLine = [a, b, c];
+          return board[a] as Player;
+        }
+      }
+      return '';
+    }
+
+    function checkDraw(): boolean {
+      return board.every(v => v !== '') && !winner;
+    }
+
+    function handleMove(index: number) {
+      if (winner || draw) return;
+      if (board[index] !== '') return;
+
+      board[index] = currentPlayer;
+      winner = checkWinner();
+      draw = checkDraw();
+      if (!winner && !draw) {
+        currentPlayer = currentPlayer === 'X' ? 'O' : 'X';
+      }
+      render();
+    }
+
+    function onCellClick(ev: Event) {
+      const target = ev.currentTarget as HTMLButtonElement;
+      const index = Number(target.dataset.index);
+      handleMove(index);
+    }
+
+    function onCellKeydown(ev: KeyboardEvent) {
+      if (ev.key === 'Enter' || ev.key === ' ') {
+        ev.preventDefault();
+        const target = ev.currentTarget as HTMLButtonElement;
+        const index = Number(target.dataset.index);
+        handleMove(index);
+      }
+    }
+
+    function reset() {
+      board = Array(9).fill('') as CellValue[];
+      currentPlayer = 'X';
+      winner = '';
+      draw = false;
+      winningLine = [];
+      render();
+      // Set focus to the first cell for keyboard convenience
+      const first = cells[0];
+      if (first) first.focus();
+    }
+
+    // Bind events
+    cells.forEach(btn => {
+      btn.addEventListener('click', onCellClick);
+      btn.addEventListener('keydown', onCellKeydown);
+    });
+    resetBtn?.addEventListener('click', reset);
+
+    // Initial render
+    render();
+  }
+
+  // Initialize when DOM is ready
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', initTicTacToe);
+  } else {
+    initTicTacToe();
+  }
+</script>
