@@ -129,6 +129,23 @@ const text = '#111827';
     height: 100%;
   }
 
+  /* Icon wrapper ensures correct centering and sizing in grid cells */
+  .icon-wrap {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 75%;
+    height: 75%;
+  }
+
+  /* SVG icons inherit color and scale responsively */
+  .icon {
+    display: block;
+    width: 100%;
+    height: 100%;
+    color: currentColor;
+  }
+
   .cell:hover {
     transform: translateY(-1px);
     box-shadow: 0 8px 18px rgba(0,0,0,0.10);
@@ -157,6 +174,8 @@ const text = '#111827';
     color: var(--secondary);
     text-shadow: 0 4px 10px rgba(245, 158, 11, 0.2);
   }
+
+  /* Winning cell subtle glow remains; icons use currentColor so this blends nicely */
 
   .cell.win {
     background: radial-gradient(ellipse at center, rgba(37, 99, 235, 0.12), transparent 70%);
@@ -283,9 +302,46 @@ const text = '#111827';
       // Update cells
       cells.forEach((btn, idx) => {
         const val = board[idx];
-        btn.textContent = val;
-        btn.classList.toggle('x', val === 'X');
-        btn.classList.toggle('o', val === 'O');
+
+        // Clear any previous icon content
+        btn.innerHTML = '';
+
+        // Render appropriate icon for the value with accessibility support
+        if (val === 'X') {
+          // Knight icon (represents former 'X')
+          btn.innerHTML = `
+            <span class="icon-wrap" role="img" aria-label="Knight" title="Knight">
+              <svg class="icon knight" viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+                <!-- Simple stylized knight head and base -->
+                <path d="M5 20h14v-2a5 5 0 0 0-5-5h-2v-2.2c0-.5.2-.9.5-1.2l3.2-3.1c.5-.5.2-1.3-.5-1.5L11.5 3 8 6.5V9H6c-1.1 0-2 .9-2 2v2h4v2H6a3 3 0 0 0-3 3v2z" fill="currentColor"></path>
+                <circle cx="12.5" cy="8.5" r="0.8" fill="#fff"></circle>
+              </svg>
+            </span>
+          `;
+          btn.classList.add('x');
+          btn.classList.remove('o');
+        } else if (val === 'O') {
+          // Queen icon (represents former 'O')
+          btn.innerHTML = `
+            <span class="icon-wrap" role="img" aria-label="Queen" title="Queen">
+              <svg class="icon queen" viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+                <!-- Crown base -->
+                <path d="M4 18h16l-1.2 3H5.2L4 18z" fill="currentColor"></path>
+                <!-- Crown points -->
+                <path d="M6 18l2.2-7 3.3 3 3.3-3L17 18H6z" fill="currentColor"></path>
+                <!-- Crown jewels -->
+                <circle cx="6" cy="8" r="1" fill="currentColor"></circle>
+                <circle cx="12" cy="6" r="1" fill="currentColor"></circle>
+                <circle cx="18" cy="8" r="1" fill="currentColor"></circle>
+              </svg>
+            </span>
+          `;
+          btn.classList.add('o');
+          btn.classList.remove('x');
+        } else {
+          btn.classList.remove('x', 'o');
+        }
+
         btn.setAttribute('aria-disabled', winner || draw ? 'true' : (val ? 'true' : 'false'));
         btn.tabIndex = val || winner || draw ? -1 : 0;
         btn.classList.toggle('win', winningLine.includes(idx));
