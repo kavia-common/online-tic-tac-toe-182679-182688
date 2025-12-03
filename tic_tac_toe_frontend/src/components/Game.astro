@@ -29,15 +29,15 @@ const text = '#111827';
       data-winner=""
       data-draw="false"
     >
-      <button class="cell" role="gridcell" aria-label="Cell 1" data-index="0"></button>
-      <button class="cell" role="gridcell" aria-label="Cell 2" data-index="1"></button>
-      <button class="cell" role="gridcell" aria-label="Cell 3" data-index="2"></button>
-      <button class="cell" role="gridcell" aria-label="Cell 4" data-index="3"></button>
-      <button class="cell" role="gridcell" aria-label="Cell 5" data-index="4"></button>
-      <button class="cell" role="gridcell" aria-label="Cell 6" data-index="5"></button>
-      <button class="cell" role="gridcell" aria-label="Cell 7" data-index="6"></button>
-      <button class="cell" role="gridcell" aria-label="Cell 8" data-index="7"></button>
-      <button class="cell" role="gridcell" aria-label="Cell 9" data-index="8"></button>
+      <button class="cell" role="gridcell" aria-label="Cell 1" data-index="0" type="button"></button>
+      <button class="cell" role="gridcell" aria-label="Cell 2" data-index="1" type="button"></button>
+      <button class="cell" role="gridcell" aria-label="Cell 3" data-index="2" type="button"></button>
+      <button class="cell" role="gridcell" aria-label="Cell 4" data-index="3" type="button"></button>
+      <button class="cell" role="gridcell" aria-label="Cell 5" data-index="4" type="button"></button>
+      <button class="cell" role="gridcell" aria-label="Cell 6" data-index="5" type="button"></button>
+      <button class="cell" role="gridcell" aria-label="Cell 7" data-index="6" type="button"></button>
+      <button class="cell" role="gridcell" aria-label="Cell 8" data-index="7" type="button"></button>
+      <button class="cell" role="gridcell" aria-label="Cell 9" data-index="8" type="button"></button>
     </div>
   </div>
 
@@ -128,6 +128,8 @@ const text = '#111827';
     transition: transform 0.08s ease, box-shadow 0.2s ease, background-color 0.2s ease, color 0.2s ease, outline-color 0.2s ease;
     line-height: 1;
     height: 100%;
+    position: relative;
+    overflow: hidden;
   }
 
   /* Icon wrapper ensures correct centering and sizing in grid cells */
@@ -147,6 +149,13 @@ const text = '#111827';
     color: currentColor;
   }
 
+  /* Make sure icons are visible if parent color is changed elsewhere */
+  .cell .icon,
+  .cell .icon * {
+    fill: currentColor;
+    stroke: none;
+  }
+
   .cell:hover {
     transform: translateY(-1px);
     box-shadow: 0 8px 18px rgba(0,0,0,0.10);
@@ -163,7 +172,7 @@ const text = '#111827';
 
   .cell[aria-disabled="true"] {
     cursor: default;
-    opacity: 0.9;
+    opacity: 0.95;
   }
 
   .cell.x {
@@ -177,7 +186,6 @@ const text = '#111827';
   }
 
   /* Winning cell subtle glow remains; icons use currentColor so this blends nicely */
-
   .cell.win {
     background: radial-gradient(ellipse at center, rgba(37, 99, 235, 0.12), transparent 70%);
   }
@@ -273,7 +281,7 @@ const text = '#111827';
    * Initializes the Tic Tac Toe game logic with keyboard accessibility and ARIA updates.
    */
   function initTicTacToe() {
-    const boardEl = document.getElementById('board');
+    const boardEl = document.getElementById('board') as HTMLElement | null;
     const cells = Array.from(boardEl?.querySelectorAll('.cell') ?? []) as HTMLButtonElement[];
     const statusEl = document.getElementById('status') as HTMLElement | null;
     const resetBtn = document.getElementById('reset') as HTMLButtonElement | null;
@@ -281,7 +289,8 @@ const text = '#111827';
     type Player = 'X' | 'O';
     type CellValue = Player | '';
 
-    let board: CellValue[] = Array(9).fill('') as CellValue[];
+    // State kept in closure; always update immutably when changing board
+    let board: ReadonlyArray<CellValue> = Array(9).fill('') as CellValue[];
     let currentPlayer: Player = 'X';
     let winner: Player | '' = '';
     let draw = false;
@@ -299,53 +308,57 @@ const text = '#111827';
       statusEl.className = 'status ' + classes.join(' ');
     }
 
+    function iconFor(val: CellValue): string {
+      if (val === 'X') {
+        return `
+          <span class="icon-wrap" role="img" aria-label="Knight" title="Knight">
+            <svg class="icon knight" viewBox="0 0 24 24" aria-hidden="true" focusable="false" preserveAspectRatio="xMidYMid meet">
+              <path d="M5 20h14v-2a5 5 0 0 0-5-5h-2v-2.2c0-.5.2-.9.5-1.2l3.2-3.1c.5-.5.2-1.3-.5-1.5L11.5 3 8 6.5V9H6c-1.1 0-2 .9-2 2v2h4v2H6a3 3 0 0 0-3 3v2z" />
+              <circle cx="12.5" cy="8.5" r="0.8" fill="#fff"></circle>
+            </svg>
+          </span>
+        `;
+      }
+      if (val === 'O') {
+        return `
+          <span class="icon-wrap" role="img" aria-label="Queen" title="Queen">
+            <svg class="icon queen" viewBox="0 0 24 24" aria-hidden="true" focusable="false" preserveAspectRatio="xMidYMid meet">
+              <path d="M4 18h16l-1.2 3H5.2L4 18z" />
+              <path d="M6 18l2.2-7 3.3 3 3.3-3L17 18H6z" />
+              <circle cx="6" cy="8" r="1"></circle>
+              <circle cx="12" cy="6" r="1"></circle>
+              <circle cx="18" cy="8" r="1"></circle>
+            </svg>
+          </span>
+        `;
+      }
+      return '';
+    }
+
     function render() {
       // Update cells
       cells.forEach((btn, idx) => {
         const val = board[idx];
 
-        // Clear any previous icon content
-        btn.innerHTML = '';
-
-        // Render appropriate icon for the value with accessibility support
-        if (val === 'X') {
-          // Knight icon (represents former 'X')
-          btn.innerHTML = `
-            <span class="icon-wrap" role="img" aria-label="Knight" title="Knight">
-              <svg class="icon knight" viewBox="0 0 24 24" aria-hidden="true" focusable="false">
-                <!-- Simple stylized knight head and base -->
-                <path d="M5 20h14v-2a5 5 0 0 0-5-5h-2v-2.2c0-.5.2-.9.5-1.2l3.2-3.1c.5-.5.2-1.3-.5-1.5L11.5 3 8 6.5V9H6c-1.1 0-2 .9-2 2v2h4v2H6a3 3 0 0 0-3 3v2z" fill="currentColor"></path>
-                <circle cx="12.5" cy="8.5" r="0.8" fill="#fff"></circle>
-              </svg>
-            </span>
-          `;
-          btn.classList.add('x');
-          btn.classList.remove('o');
-        } else if (val === 'O') {
-          // Queen icon (represents former 'O')
-          btn.innerHTML = `
-            <span class="icon-wrap" role="img" aria-label="Queen" title="Queen">
-              <svg class="icon queen" viewBox="0 0 24 24" aria-hidden="true" focusable="false">
-                <!-- Crown base -->
-                <path d="M4 18h16l-1.2 3H5.2L4 18z" fill="currentColor"></path>
-                <!-- Crown points -->
-                <path d="M6 18l2.2-7 3.3 3 3.3-3L17 18H6z" fill="currentColor"></path>
-                <!-- Crown jewels -->
-                <circle cx="6" cy="8" r="1" fill="currentColor"></circle>
-                <circle cx="12" cy="6" r="1" fill="currentColor"></circle>
-                <circle cx="18" cy="8" r="1" fill="currentColor"></circle>
-              </svg>
-            </span>
-          `;
-          btn.classList.add('o');
-          btn.classList.remove('x');
-        } else {
-          btn.classList.remove('x', 'o');
+        // Always re-render content idempotently
+        const nextHTML = iconFor(val);
+        if (btn.innerHTML !== nextHTML) {
+          // Clear then set to avoid mixing nodes if any
+          btn.innerHTML = '';
+          if (nextHTML) {
+            btn.insertAdjacentHTML('afterbegin', nextHTML);
+          }
         }
 
-        btn.setAttribute('aria-disabled', winner || draw ? 'true' : (val ? 'true' : 'false'));
-        btn.tabIndex = val || winner || draw ? -1 : 0;
+        // Ensure classes reflect value
+        btn.classList.toggle('x', val === 'X');
+        btn.classList.toggle('o', val === 'O');
         btn.classList.toggle('win', winningLine.includes(idx));
+
+        // Accessibility/interaction
+        const disabled = !!winner || !!draw || !!val;
+        btn.setAttribute('aria-disabled', disabled ? 'true' : 'false');
+        btn.tabIndex = disabled ? -1 : 0;
       });
 
       // Update board dataset for potential styling/hooks
@@ -365,45 +378,61 @@ const text = '#111827';
       }
     }
 
-    function checkWinner(): Player | '' {
+    function computeWinner(nextBoard: ReadonlyArray<CellValue>): Player | '' {
       for (const [a, b, c] of WIN_LINES) {
-        if (board[a] && board[a] === board[b] && board[b] === board[c]) {
+        if (nextBoard[a] && nextBoard[a] === nextBoard[b] && nextBoard[b] === nextBoard[c]) {
           winningLine = [a, b, c];
-          return board[a] as Player;
+          return nextBoard[a] as Player;
         }
       }
+      winningLine = [];
       return '';
     }
 
-    function checkDraw(): boolean {
-      return board.every(v => v !== '') && !winner;
+    function computeDraw(nextBoard: ReadonlyArray<CellValue>, hasWinner: boolean): boolean {
+      return nextBoard.every(v => v !== '') && !hasWinner;
     }
 
     function handleMove(index: number) {
       if (winner || draw) return;
       if (board[index] !== '') return;
 
-      board[index] = currentPlayer;
-      winner = checkWinner();
-      draw = checkDraw();
-      if (!winner && !draw) {
-        currentPlayer = currentPlayer === 'X' ? 'O' : 'X';
-      }
+      // Immutable board update to avoid subtle mutation/rendering issues
+      const nextBoard = board.slice() as CellValue[];
+      nextBoard[index] = currentPlayer;
+
+      const nextWinner = computeWinner(nextBoard);
+      const nextDraw = computeDraw(nextBoard, !!nextWinner);
+      const nextPlayer = !nextWinner && !nextDraw ? (currentPlayer === 'X' ? 'O' : 'X') : currentPlayer;
+
+      board = nextBoard;
+      winner = nextWinner;
+      draw = nextDraw;
+      currentPlayer = nextPlayer;
+
+      console.debug('[TTT] Move', { index, currentPlayer, winner, draw, board: board.join('') });
       render();
     }
 
     function onCellClick(ev: Event) {
+      ev.preventDefault();
+      ev.stopPropagation();
       const target = ev.currentTarget as HTMLButtonElement;
       const index = Number(target.dataset.index);
-      handleMove(index);
+      if (Number.isFinite(index)) {
+        handleMove(index);
+      }
     }
 
     function onCellKeydown(ev: KeyboardEvent) {
       if (ev.key === 'Enter' || ev.key === ' ') {
         ev.preventDefault();
+        ev.stopPropagation();
         const target = ev.currentTarget as HTMLButtonElement;
         const index = Number(target.dataset.index);
-        handleMove(index);
+        if (Number.isFinite(index)) {
+          handleMove(index);
+        }
       }
     }
 
@@ -421,7 +450,7 @@ const text = '#111827';
 
     // Bind events
     cells.forEach(btn => {
-      btn.addEventListener('click', onCellClick);
+      btn.addEventListener('click', onCellClick, { passive: false });
       btn.addEventListener('keydown', onCellKeydown);
     });
     resetBtn?.addEventListener('click', reset);
@@ -434,6 +463,7 @@ const text = '#111827';
   if (document.readyState === 'loading') {
     document.addEventListener('DOMContentLoaded', () => {
       initTicTacToe();
+      // Keep verification as a smoke test; it resets afterward
       runQuickVerification();
     });
   } else {
